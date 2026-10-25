@@ -48,7 +48,7 @@ export const HelpPage = () => {
     <Box sx={{ maxWidth: 1100, mx: 'auto', p: { xs: 2, md: 4 } }}>
       <Typography variant="h4" sx={{ mb: 1 }}>Ayuda</Typography>
       <Typography color="text.secondary" sx={{ mb: 3 }}>
-        Guía rápida para crear, revisar y administrar calendarios en Enta Calendars.
+        Guía rápida para crear, revisar y administrar calendarios en Enta Tools.
       </Typography>
 
       <Stack direction={{ xs: 'column', sm: 'row' }} spacing={1} sx={{ mb: 3 }}>

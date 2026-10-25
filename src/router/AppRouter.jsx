@@ -12,6 +12,7 @@ const UserAdminPage = lazy(() => import('../pages/UserAdminPage').then((module) 
 const AuditPage = lazy(() => import('../pages/AuditPage').then((module) => ({ default: module.AuditPage })));
 const HolidayAdminPage = lazy(() => import('../pages/HolidayAdminPage').then((module) => ({ default: module.HolidayAdminPage })));
 const HelpPage = lazy(() => import('../pages/HelpPage').then((module) => ({ default: module.HelpPage })));
+const ToolsHomePage = lazy(() => import('../pages/ToolsHomePage').then((module) => ({ default: module.ToolsHomePage })));
 
 const AppInitializer = ({ onInitialized }) => {
   const {
@@ -99,6 +100,8 @@ export const AppRouter = () => {
         </>
       ) : (
         <>
+          <Route path="/" element={<ToolsHomePage />} />
+          <Route path="/herramientas" element={<ToolsHomePage />} />
           <Route path="/crear" element={<CrearPage />} />
           <Route path="/monitor" element={<MonitorPage />} />
           <Route path="/editar" element={<EditarPage />} />

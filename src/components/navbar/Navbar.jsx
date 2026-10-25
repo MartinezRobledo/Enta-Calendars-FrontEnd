@@ -55,7 +55,7 @@ export const Navbar = ()=> {
     <AppBar position="static">
       <Container maxWidth="xxl">
         <Toolbar disableGutters>
-          <Box sx={{ display: { xs: 'none', md: 'flex' }, mr: 1, userSelect: 'none' }}>
+          <Box component={Link} to="/" aria-label="Ir a Enta Tools" sx={{ display: { xs: 'none', md: 'flex' }, mr: 1, userSelect: 'none' }}>
             <img
               src={Logo} // URL de la imagen
               alt="Imagen centrada"
@@ -112,7 +112,7 @@ export const Navbar = ()=> {
             </Menu>
           </Box>
 
-          <Box 
+          <Box component={Link} to="/" aria-label="Ir a Enta Tools"
             sx={{ display: { xs: 'flex', md: 'none' }, 
             mr: 1, position: 'fixed', 
             left: '50%',
