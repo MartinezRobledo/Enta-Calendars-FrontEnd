@@ -4,13 +4,10 @@ import NestedList from "../../components/list/NestedList";
 import { useRef, useState } from "react";
 import ArrowForwardIosIcon from '@mui/icons-material/ArrowForwardIos';
 import CalendariosMonitor from "./CalendariosMonitor";
-import { useBD } from "../../hooks";
-import { useEffect } from "react";
 
 export const MonitorPage = () => {
   const [selectedOption, setSelectedOption] = useState("calendarios");
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
-  const { getCalendars } = useBD();
   const theme = useTheme();
   const isSmallScreen = useMediaQuery(theme.breakpoints.down("lg")); // Detectar pantallas menores a 1100px
   
@@ -33,11 +30,6 @@ export const MonitorPage = () => {
       focusElementRef.current.focus(); // Devolver el enfoque al elemento
     }
   };
-
-  useEffect(() => {
-    getCalendars();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [])
 
   return (
     <>

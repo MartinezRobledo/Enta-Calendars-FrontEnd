@@ -7,5 +7,24 @@
     --mui-palette-primary-extra: #0075ff;
     --mui-palette-secondary-main: #fc8b04;
     --mui-palette-secondary-extra: #9c9c9c;
+    --calendar-background: #f9f9f9;
+    --calendar-month-background: #ffffff;
+    --calendar-day-background: #f1f1f1;
+    --calendar-header-background: #e9e9e9;
+    --calendar-border: #dddddd;
+    --calendar-text: #333333;
+    --calendar-muted-text: #555555;
+    --calendar-hover: #e0e0e0;
+  }
+
+  :root[data-theme='dark'] {
+    --calendar-background: #121212;
+    --calendar-month-background: #1e1e1e;
+    --calendar-day-background: #2b2b2b;
+    --calendar-header-background: #353535;
+    --calendar-border: #555555;
+    --calendar-text: #f5f5f5;
+    --calendar-muted-text: #c2c2c2;
+    --calendar-hover: #454545;
   }
   

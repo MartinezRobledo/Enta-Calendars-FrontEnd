@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { Box, Typography, IconButton, Grid, Input, ButtonGroup, Button } from '@mui/material';
+import { Alert, Box, Typography, IconButton, Grid, Input, ButtonGroup, Button } from '@mui/material';
 import ArrowBackIosIcon from '@mui/icons-material/ArrowBackIos';
 import ArrowForwardIosIcon from '@mui/icons-material/ArrowForwardIos';
 import { useAuthStore, useBD } from '../../hooks';
@@ -12,7 +12,8 @@ import 'sweetalert2/dist/sweetalert2.min.css';
 import Calendar from '../calendar/Calendar';
 import { CapasForm } from './CapasForm';
 import { ActionButtons } from './components/ActionButtons';
-import { crear, guardar, exportBpRelease, exportCsv } from './functions/calendarsFunctions';
+import { crear, guardar } from './functions/calendarsFunctions';
+import { CALENDAR_EXPORT_FORMATS, createCalendarExport } from './functions/calendarExports';
 
 export const CalendarForm = ({
   titleStore, 
@@ -26,24 +27,69 @@ export const CalendarForm = ({
   _id
 }) => {
 
-const extensions = ['.bprelease', '.csv'];
+const downloadCalendarFile = ({ blob, filename }) => {
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement('a');
+  link.href = url;
+  link.download = filename;
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+  window.setTimeout(() => URL.revokeObjectURL(url), 1000);
+};
 
 const { holidays, getCalendars, saveConfig, updateConfig } = useBD();
 const { user } = useAuthStore();
 
-const [indexaño, setIndexAño] = useState(indexAñoStore);
+const currentCalendarYear = new Date().getFullYear();
+const currentYearIndex = Array.isArray(añosStore)
+  ? añosStore.findIndex((year) => Number(year.año) === currentCalendarYear)
+  : -1;
+const previousYearIndex = Array.isArray(añosStore)
+  ? añosStore.findIndex((year) => Number(year.año) === currentCalendarYear - 1)
+  : -1;
+const initialYearIndex = currentYearIndex >= 0
+  ? currentYearIndex
+  : previousYearIndex >= 0
+    ? previousYearIndex
+    : Math.min(indexAñoStore || 0, Math.max((añosStore?.length || 1) - 1, 0));
+
+const [indexaño, setIndexAño] = useState(initialYearIndex);
 const [title, setTitle] = useState(titleStore);
-const [capaActual, setCapaActual] = useState(añosStore[indexaño].capaActualStore);
-const [capas, setCapas] = useState(añosStore[indexaño].capasStore);
+const [capaActual, setCapaActual] = useState(añosStore?.[indexaño]?.capaActualStore ?? 0);
+const [capas, setCapas] = useState(añosStore?.[indexaño]?.capasStore ?? []);
 const [isDisabled, setIsDisabled] = useState(disabled); // Nuevo estado para deshabilitar formulario
-const [diasActivos, setDiasActivos] = useState(añosStore[indexaño].diasActivosStore);
-const [añosActivos, setAñosActivos] = useState(añosStore);
+const [diasActivos, setDiasActivos] = useState(añosStore?.[indexaño]?.diasActivosStore ?? []);
+const [añosActivos, setAñosActivos] = useState(Array.isArray(añosStore) ? añosStore : []);
 
 const titleRef = useRef(""); // Usamos useRef para rastrear el valor actual de `title`
 const indexAñoRef = useRef(indexaño);
 const añosRef = useRef(añosActivos);
 
 const [showButtons, setShowButtons] = useState(false);
+
+const currentYearConfig = añosActivos[indexaño];
+const previousCalendarYearIndex = añosActivos.findIndex((year) =>
+  Number(year.año) === Number(currentYearConfig?.año) - 1
+  && Number(year.año) >= currentCalendarYear - 1
+);
+const nextCalendarYearIndex = añosActivos.findIndex((year) =>
+  Number(year.año) === Number(currentYearConfig?.año) + 1
+  && Number(year.año) <= currentCalendarYear + 1
+);
+const holidaysForYear = holidays?.find((holiday) => Number(holiday.año) === Number(currentYearConfig?.año))
+  || { año: currentYearConfig?.año, holidays: [] };
+const formDataIsValid = currentYearConfig
+  && Number(currentYearConfig.año)
+  && Array.isArray(currentYearConfig.capasStore)
+  && currentYearConfig.capasStore.length > 0
+  && Array.isArray(currentYearConfig.diasActivosStore)
+  && Array.isArray(currentYearConfig.aditionalDaysToAdd)
+  && Array.isArray(currentYearConfig.aditionalDaysToRemove)
+  && Number.isInteger(capaActual)
+  && capaActual >= 0
+  && capaActual < currentYearConfig.capasStore.length
+  && currentYearConfig.capasStore.every((capa) => capa?.data && Array.isArray(capa.dias) && Array.isArray(capa.esPadre));
 
 const actions = [
   {
@@ -136,20 +182,17 @@ const actualizarStore = () => {
 };
 
 const handleYearChange = (direction) => {
-    setIndexAño((prevIndexAño) => {
-        const newIndexAño = prevIndexAño + direction;
+    const targetYear = Number(añosActivos[indexaño]?.año) + direction;
+    if (targetYear < currentCalendarYear - 1 || targetYear > currentCalendarYear + 1) return;
+    const newIndexAño = añosActivos.findIndex((year) => Number(year.año) === targetYear);
+    if (newIndexAño < 0 || newIndexAño === indexaño) return;
 
-        // Actualiza la referencia con el nuevo valor
-        indexAñoRef.current = newIndexAño;
-
-        // Actualiza el formulario con los datos del nuevo año
-        const newAño = añosActivos[newIndexAño];
-        setCapas(newAño.capasStore);
-        setCapaActual(newAño.capaActualStore);
-        setDiasActivos(newAño.diasActivosStore);
-
-        return newIndexAño;
-    });
+    indexAñoRef.current = newIndexAño;
+    const newAño = añosActivos[newIndexAño];
+    setCapas(newAño.capasStore);
+    setCapaActual(newAño.capaActualStore);
+    setDiasActivos(newAño.diasActivosStore);
+    setIndexAño(newIndexAño);
 };
 
 const handleBlur = () => {
@@ -219,7 +262,7 @@ const validarFormulario = () => {
     return false;
   }
 
-  if(diasActivos.length === 0 && añosActivos[indexaño].aditionalDaysToAdd.length === 0) {
+  if(diasActivos.length === 0 && (añosActivos[indexaño].aditionalDaysToAdd || []).length === 0) {
     Swal.fire({
       icon: 'error',
       title: 'No definió ningún día',
@@ -233,21 +276,23 @@ const validarFormulario = () => {
   return true;
 }
 
-const exportHandler = (ext) => {
+const exportHandler = (extension) => {
   actualizarStore();
-  if(ext == '.bprelease') {
-    exportBpRelease(title, añosActivos, user.name);
+  try {
+    const file = createCalendarExport({ titleStore: title, añosStore: añosActivos }, extension, user.name);
+    downloadCalendarFile(file);
+  } catch (error) {
+    Swal.fire('No se pudo exportar', error.message || 'No se generó el archivo.', 'error');
+  } finally {
+    setIsDisabled(false);
+    setShowButtons(false);
   }
-  else
-      exportCsv();
-  
-  setIsDisabled(false);
-  setShowButtons(false);
 }
 
 useEffect(() => {
     setAñosActivos((prev) => {
         let newAños = [...prev]; // Copia superficial del array
+        if (!newAños[indexaño]) return prev;
         newAños[indexaño] = { // Crea un nuevo objeto basado en el existente
             ...newAños[indexaño],
             capasStore: capas,
@@ -256,16 +301,22 @@ useEffect(() => {
         };
         return newAños; // Retorna el nuevo array con los cambios
     });
-}, [capas, capaActual, diasActivos])
+}, [capas, capaActual, diasActivos, indexaño])
 
 useEffect(() => {
     añosRef.current = añosActivos;
 }, [añosActivos])
 
+if (!formDataIsValid) {
+  return <Alert severity="warning" sx={{ m: 3 }}>
+    No se pudo abrir este calendario porque su configuración está incompleta. Vuelve al monitor y prueba nuevamente.
+  </Alert>;
+}
+
   return (
-    <Grid container direction="column">
-      <Grid container item sx={{ flex: 1, padding:2}}>
-        <Grid item xs={12} md={6} sm={12} xl={4}>
+    <Grid container direction="column" sx={{ width: '100%', minWidth: 0 }}>
+      <Grid container item sx={{ flex: 1, width: '100%', minWidth: 0, p: { xs: 1, md: 2 } }}>
+        <Grid item xs={12} md={6} xl={4} sx={{ minWidth: 0 }}>
 
         {/*Navegador de años*/}
         <Box 
@@ -276,7 +327,7 @@ useEffect(() => {
             sx={{ border: '1px solid', borderColor: 'secondary.extra', borderRadius: 5, p: 1 }}
         >
             <Box>
-            { indexaño === 1 
+            { previousCalendarYearIndex >= 0
                 ? ( 
                     <IconButton onClick={() => handleYearChange(-1)} disabled={isDisabled}>
                     <ArrowBackIosIcon/>
@@ -290,10 +341,10 @@ useEffect(() => {
             }
             </Box>
             <Typography variant="h6" mx={2}>
-            {holidays[indexaño].año}
+            {holidaysForYear.año}
             </Typography>
             <Box>
-            { indexaño === 0
+            { nextCalendarYearIndex >= 0
                 ? ( <IconButton onClick={() => handleYearChange(1)} disabled={isDisabled}>
                     <ArrowForwardIosIcon color={'primary.extra'}/>
                     </IconButton>
@@ -327,10 +378,10 @@ useEffect(() => {
         <CapasForm 
             key={indexaño}
             isDisabled={isDisabled}
-            año={añosActivos[indexaño].año}
-            holidays={holidays[indexaño].holidays}
-            capasInicial={añosActivos[indexaño].capasStore}
-            capaActualInicial={añosActivos[indexaño].capaActualStore}
+            año={currentYearConfig.año}
+            holidays={holidaysForYear.holidays}
+            capasInicial={currentYearConfig.capasStore}
+            capaActualInicial={capaActual}
             actualizarConfig={(capasx, capaActualx, diasActivosx) => {
                 setCapas(capasx);
                 setCapaActual(capaActualx);
@@ -346,16 +397,20 @@ useEffect(() => {
               <div className="animate__animated animate__bounceIn"
                   style={{ display: 'flex', flexDirection: 'column', alignItems: 'stretch', width: 'fit-content', margin: '0 auto' }}
               >
-                  {/* Botones con extensiones */}
-                  <ButtonGroup>
-                    {extensions.map((ext, index) => (
+                  {/* Formatos de exportación */}
+                  <ButtonGroup sx={{ flexWrap: 'wrap', justifyContent: 'center' }}>
+                    {CALENDAR_EXPORT_FORMATS.map(({ extension, label }) => (
                       <Button
-                        key={`extension-${index}`}
+                        key={extension}
                         variant="contained"
-                        onClick={() => exportHandler(ext)}
-                        sx={{color: 'default.main'}}
+                        onClick={() => exportHandler(extension)}
+                        sx={{
+                          color: 'primary.contrastText',
+                          backgroundColor: 'primary.main',
+                          '&:hover': { backgroundColor: 'primary.dark' },
+                        }}
                       >
-                        {ext.toUpperCase()}
+                        {label}
                       </Button>
                     ))}
                   </ButtonGroup>
@@ -381,13 +436,13 @@ useEffect(() => {
         </Grid>
 
         </Grid>
-      <Grid item xs={12} md={6} xl>
+      <Grid item xs={12} md={6} xl={8} sx={{ minWidth: 0 }}>
         <Calendar
-            anio={holidays[indexaño].año}
+            anio={holidaysForYear.año}
             isDisabled={isDisabled}
             diasActivos={diasActivos}
-            aditionalDaysToAdd={añosActivos[indexaño].aditionalDaysToAdd}
-            aditionalDaysToRemove={añosActivos[indexaño].aditionalDaysToRemove}
+            aditionalDaysToAdd={currentYearConfig.aditionalDaysToAdd || []}
+            aditionalDaysToRemove={currentYearConfig.aditionalDaysToRemove || []}
             changeAditionalDaysToAdd={(dia) => handleDiasAdicionales(dia)}
             changeAditionalDaysToRemove={(dia) => handleDiasExcluidos(dia)}
         />

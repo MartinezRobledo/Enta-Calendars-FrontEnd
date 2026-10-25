@@ -16,14 +16,18 @@ const ButtonGroup = ({extensions = [], setOption}) => {
             sx={{
               flex: '1',
               margin: '1px',
+              color: 'text.primary',
+              backgroundColor: 'background.paper',
               '&:hover': {
                 backgroundColor: 'primary.main', // Fondo al hacer hover
+                color: 'primary.contrastText',
               },
               '&.Mui-selected': {
                 backgroundColor: 'primary.main', // Fondo cuando está seleccionado
-                color: 'white', // Color del texto cuando está seleccionado
+                color: 'primary.contrastText', // Color del texto cuando está seleccionado
                 '&:hover': {
                   backgroundColor: 'secondary.main', // Fondo al hacer hover cuando está seleccionado
+                  color: 'primary.contrastText',
                 }
               }
             }}

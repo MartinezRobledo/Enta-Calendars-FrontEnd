@@ -1,4 +1,5 @@
-import { Checkbox, FormControlLabel, Grid, ToggleButton, ToggleButtonGroup, Typography } from '@mui/material';
+import { Checkbox, FormControlLabel, Grid, IconButton, ToggleButton, ToggleButtonGroup, Tooltip, Typography } from '@mui/material';
+import InfoOutlinedIcon from '@mui/icons-material/InfoOutlined';
 
 export const SelectDays = ({byWeekday = {}, onChangeSelectDays, allDays, isDisabled, agrupar, setAgrupar }) => {
   const tempOfWeek = {
@@ -53,14 +54,18 @@ export const SelectDays = ({byWeekday = {}, onChangeSelectDays, allDays, isDisab
             sx={{
               flex: '1',
               margin: '1px',
+              color: 'text.primary',
+              backgroundColor: 'background.paper',
               '&:hover': {
                 backgroundColor: 'primary.main', // Fondo al hacer hover
+                color: 'primary.contrastText',
               },
               '&.Mui-selected': {
                 backgroundColor: 'primary.main', // Fondo cuando está seleccionado
-                color: 'white', // Color del texto cuando está seleccionado
+                color: 'primary.contrastText', // Color del texto cuando está seleccionado
                 '&:hover': {
                   backgroundColor: 'secondary.main', // Fondo al hacer hover cuando está seleccionado
+                  color: 'primary.contrastText',
                 }
               }
             }}
@@ -95,7 +100,22 @@ export const SelectDays = ({byWeekday = {}, onChangeSelectDays, allDays, isDisab
                 color="primary"
               />
             }
-            label="Agrupar"
+            label={
+              <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4 }}>
+                Exigir semana completa
+                <Tooltip title="Los días de la semana que seleccionaste se conservan juntos solo si están todos disponibles. Si falta alguno por un feriado, por estar fuera del rango o por otra regla, se descartan los demás días de ese bloque de 7 días.">
+                  <IconButton
+                    size="small"
+                    aria-label="Ayuda sobre exigir semana completa"
+                    onClick={(event) => event.stopPropagation()}
+                    onMouseDown={(event) => event.stopPropagation()}
+                    sx={{ p: 0.25 }}
+                  >
+                    <InfoOutlinedIcon fontSize="inherit" />
+                  </IconButton>
+                </Tooltip>
+              </span>
+            }
           />
         </Grid>
       </Grid>

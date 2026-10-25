@@ -65,7 +65,7 @@ export const TextFieldCustom = ({ byMonthdayStr, onChangeByMonthdays, isDisabled
       InputProps={{
         endAdornment: (
           <InputAdornment position="end">
-            <Tooltip title="Indique números positivos separados por coma para seleccionar días desde el inicio del mes. Use números negativos para días desde el final del mes. Puede agregar '+' o '-' al final de los números para marcar sus preferencias.">
+            <Tooltip title="Separe las reglas con comas. Ejemplos: 15 selecciona el día 15; -2 selecciona el penúltimo día; 2+ selecciona desde el día 2 hasta el final del mes; 2- selecciona desde el día 1 hasta el día 2; -2+ selecciona los dos últimos días; -2- selecciona desde el día 1 hasta el penúltimo día de cada mes.">
               <IconButton>
                 <HelpIcon />
               </IconButton>

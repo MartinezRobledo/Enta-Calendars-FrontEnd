@@ -1,10 +1,18 @@
+import { useCallback } from "react";
 import { useDispatch, useSelector } from "react-redux";
-import { onInitializeCapa, onInitializeCapaEdit, onStartLoadingHolidays, onStartLoadingTemplates } from "../store";
+import { onInitializeCapa, onStartLoadingHolidays, onStartLoadingTemplates } from "../store";
 import { calendarApi } from "../api";
 import { fetchCalendars } from "../store/calendar/calendarSlice";
 import { useAuthStore } from "./useAuthStore";
 
 export const useBD = () => {
+
+    const mapHolidayDates = useCallback((holiday) => holiday.dates?.length
+        ? holiday.dates.map((date) => {
+            const [year, month, day] = date.split('-').map(Number);
+            return new Date(year, month - 1, day);
+        })
+        : (holiday.feriados_ar || []).map((day) => new Date(day)), []);
 
     const dispatch = useDispatch();
     const { user } = useAuthStore();
@@ -14,48 +22,37 @@ export const useBD = () => {
         templates,
     } = useSelector((state) => state.start); // Accede a startDataSlice
 
-    const startLoadingTemplates = async() => {
+    const startLoadingTemplates = useCallback(async() => {
         try {
             const { data } = await calendarApi.get('/templates');
             dispatch( onStartLoadingTemplates( data.templates[0] ) );
         } catch (error) {
             console.log(error);
         }
-    };
+    }, [dispatch]);
 
     //Traigo feridados del backend y los guardo en el store.
-    const startLoadingHolidays = async () => {
+    const startLoadingHolidays = useCallback(async () => {
         try {
-            let response = await calendarApi.get('/holidays/last');
-            let data = response.data;
-            if (!data.feriados.feriados_ar) {
-                throw new Error('No se pudo obtener los feriados solicitados');
-            }
-            const lastholidays = data.feriados.feriados_ar.map((day) => new Date(day));
-            const lastyear = data.feriados.año;
-            
-            response = await calendarApi.get('/holidays/'+(lastyear-1));
-            data = response.data;
+            const currentYear = new Date().getFullYear();
+            const years = [currentYear - 1, currentYear, currentYear + 1];
+            const holidaysByYear = await Promise.all(years.map(async (year) => {
+                const { data } = await calendarApi.get(`/holidays/${year}`);
+                if (!data.feriados || !Array.isArray(data.feriados.feriados_ar)) {
+                    throw new Error(`No se pudieron obtener los feriados de ${year}`);
+                }
+                return { año: year, holidays: mapHolidayDates(data.feriados) };
+            }));
 
-            if (!data.feriados.feriados_ar) {
-                throw new Error('No se pudo obtener los feriados solicitados');
-            }
-            const penultimateholidays = data.feriados.feriados_ar.map((day) => new Date(day));
-            const penultimateyear = data.feriados.año;
-
-            dispatch(onStartLoadingHolidays([
-                { año: penultimateyear, holidays: penultimateholidays },
-                { año: lastyear, holidays: lastholidays }, 
-            ]));
-            
-            dispatch(onInitializeCapa([penultimateyear, lastyear]));
+            dispatch(onStartLoadingHolidays(holidaysByYear));
+            dispatch(onInitializeCapa(years));
         } catch (error) {
             console.error("Error al cargar los feriados:", error);
             throw error; // Propaga el error para manejarlo en el componente
         }
-    };
+    }, [dispatch, mapHolidayDates]);
 
-    const saveConfig = async(calendario) => {
+    const saveConfig = useCallback(async(calendario) => {
         try{
             await calendarApi.post('/calendars', calendario);
             return null;
@@ -63,30 +60,30 @@ export const useBD = () => {
         catch (error) {
             return error;
         }
-    }
+    }, []);
 
-    const updateConfig = async(_id, calendario) => {
+    const updateConfig = useCallback(async(_id, calendario) => {
         try{
-            const data = await calendarApi.put('/calendars', {_id, calendario});
+            await calendarApi.put('/calendars', {_id, calendario});
             return null;
         }
         catch (error) {
             return error;
         }
-    }
+    }, []);
 
-    const deleteCalendarFetch = async(id) => {
+    const deleteCalendarFetch = useCallback(async(id) => {
         try {
             const { data } = await calendarApi.delete('/calendars/'+id);
             return { data, error:null };
         } catch(error) {
             return { data:null, error };
         }
-    }
+    }, []);
 
-    const getCalendars = async() => {
-        dispatch(fetchCalendars(user.name));
-    }
+    const getCalendars = useCallback(async({ search = '', skip = 0 } = {}) => {
+        dispatch(fetchCalendars({ user: user.name, skip, search }));
+    }, [dispatch, user.name]);
 
     return {
         //* Propiedades

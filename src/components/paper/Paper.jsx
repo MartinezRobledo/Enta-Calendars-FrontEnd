@@ -7,6 +7,7 @@ import { useTheme } from '@mui/material/styles';
 
 export const SimplePaper = ({ papers = [], handleClick, handleDownload, handleDelete, selectedIds = [], setSelectedIds, setSelectAll }) => {
   const theme = useTheme();
+  const selectedIdSet = new Set(selectedIds);
 
   const handleCheckboxChange = (id, nextCheck) => {
     if (selectedIds.includes(id)) {
@@ -29,7 +30,7 @@ export const SimplePaper = ({ papers = [], handleClick, handleDownload, handleDe
       }}
     >
       {papers.map((paper) => {
-        const isSelected = selectedIds.includes(paper._id);
+        const isSelected = selectedIdSet.has(paper._id);
 
         return (
           <Grid item key={paper._id}>
@@ -39,7 +40,7 @@ export const SimplePaper = ({ papers = [], handleClick, handleDownload, handleDe
                 position: 'relative',
                 height: '200px',
                 width: '200px',
-                backgroundColor: '#fff',
+                backgroundColor: theme.palette.background.paper,
                 borderRadius: '10px',
                 boxShadow: '0 4px 12px rgba(0, 0, 0, 0.2)',
                 overflow: 'hidden',
@@ -64,7 +65,7 @@ export const SimplePaper = ({ papers = [], handleClick, handleDownload, handleDe
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'center',
-                  color: '#333',
+                  color: theme.palette.text.primary,
                   fontWeight: 'bold',
                   textAlign: 'center',
                   height: '100%',
@@ -85,7 +86,7 @@ export const SimplePaper = ({ papers = [], handleClick, handleDownload, handleDe
                   position: 'absolute',
                   bottom: '8px',
                   fontSize: '0.75rem',
-                  color: '#555',
+                  color: theme.palette.text.secondary,
                   left: '19%',
                 }}
               >
@@ -118,7 +119,19 @@ export const SimplePaper = ({ papers = [], handleClick, handleDownload, handleDe
                   },
                 }}
               >
-                <Typography variant="h6">{isSelected ? paper.titleStore : 'Ver calendario'}</Typography>
+                <Typography
+                  variant="h6"
+                  sx={{
+                    width: '100%',
+                    boxSizing: 'border-box',
+                    px: 2,
+                    textAlign: 'center',
+                    overflowWrap: 'anywhere',
+                    wordBreak: 'break-word',
+                  }}
+                >
+                  {isSelected ? paper.titleStore : 'Ver calendario'}
+                </Typography>
 
                 {/* Botón cerrar */}
                 <IconButton

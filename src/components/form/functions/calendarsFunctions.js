@@ -126,7 +126,7 @@ function fechasToBp(fechasDeEjecucion = [], fechaInicio, fechaFin) {
     return otherDates;
 }
 
-const createCalendarbp = (fechas = [], title, user, inicio, fin)=> {
+export const createCalendarbp = (fechas = [], title, user, inicio, fin)=> {
 
     const template = {
         calendar: "<calendar id='ID' name='NOMBRE' xmlns='http://www.blueprism.co.uk/product/calendar'>",
@@ -178,7 +178,7 @@ const createCalendarbp = (fechas = [], title, user, inicio, fin)=> {
     
 }
 
-const createCalendarAutomation = (fechas = []) => {
+export const createCalendarAutomation = (fechas = []) => {
     const AutomationDates = fechas.map(fecha => formatDateAutomation(fecha));
     return AutomationDates;
 }

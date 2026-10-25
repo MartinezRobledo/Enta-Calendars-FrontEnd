@@ -4,7 +4,8 @@ import { Tab, Tabs, Box, Typography } from '@mui/material';
 import AddIcon from '@mui/icons-material/Add';
 import CloseIcon from '@mui/icons-material/Close';
 import { useBD } from '../../hooks';
-import { encontrarDiasCoincidentes, filterHolidays, normalizeByMonthday, normalizeByMonthdayDependence, recortarDiasPorConfiguracion, Rules } from './functions/Rules';
+import { filterHolidays, normalizeByMonthday, normalizeByMonthdayDependence, recortarDiasPorConfiguracion, Rules } from './functions/Rules';
+import { actualizarCapaYDependientes } from './functions/layerCalculations';
 import AutocompleteCustom from './components/AutocompleteCustom';
 import Swal from 'sweetalert2/dist/sweetalert2.js';
 import 'sweetalert2/dist/sweetalert2.min.css';
@@ -23,6 +24,7 @@ export const CapasForm = ({ capaActualInicial, capasInicial, isDisabled, actuali
 
 const [capas, setCapas] = useState([...capasInicial]);
 const [capaActual, setCapaActual] = useState(capaActualInicial);
+const legacyNegativeMonthdayRangesRecalculated = useRef(false);
 
 useEffect(() => {
   const diasActivos = capas.filter((capa) => capa.esPadre.length === 0).map((capa) => capa.dias).flat();
@@ -82,7 +84,8 @@ const eliminarCapa = (index) => {
                     capa.data.initCalendar,
                     capa.data.finishCalendar,
                     capa.data.byMonthday,
-                    capa.data.byWeekday
+                    capa.data.byWeekday,
+                    capa.data.byMonthdayStr
                 );
 
                 if (!capa.data.withHolidays) {
@@ -109,44 +112,29 @@ const eliminarCapa = (index) => {
     setCapaActual((prev) => Math.max(0, prev >= index ? prev - 1 : prev));
 };
 
-const actualizarCapaYDependientes = (indiceCapa, nuevasCapas) => {
-  const capaActual = { ...nuevasCapas[indiceCapa] }; // Crear una copia inmutable de la capa actual
+useEffect(() => {
+  if (legacyNegativeMonthdayRangesRecalculated.current) return;
+  legacyNegativeMonthdayRangesRecalculated.current = true;
 
-  // Recalcular los días de la capa actual
-  capaActual.dias = capaActual.dependienteDe
-      ? recortarDiasPorConfiguracion(
-          nuevasCapas[capaActual.dependienteDe - 1].dias,
-          capaActual
-      )
-      : Rules(
-          capaActual.data.initCalendar,
-          capaActual.data.finishCalendar,
-          capaActual.data.byMonthday,
-          capaActual.data.byWeekday
-      );
+  const hasLegacyNegativeMonthdayRange = (ruleText) =>
+    String(ruleText || '').split(',').some((item) => /^\s*-\d+[+-]\s*$/.test(item));
+  if (!capas.some((capa) => hasLegacyNegativeMonthdayRange(capa.data?.byMonthdayStr))) return;
 
-  if (!capaActual.data.withHolidays) {
-      capaActual.dias = filterHolidays(capaActual.dias, holidays);
-  }
-
-  if (capaActual.data.agrupar) {
-      capaActual.dias = encontrarDiasCoincidentes(
-          capaActual.dias,
-          Object.keys(capaActual.data.byWeekday).length,
-          año
-      );
-  }
-
-  // Asigna la capa modificada de vuelta al array
-  nuevasCapas[indiceCapa] = capaActual;
-
-  // Si la capa tiene hijos, actualízalos recursivamente
-  if (capaActual.esPadre.length > 0) {
-      capaActual.esPadre.forEach((idHijo) => {
-          actualizarCapaYDependientes(idHijo - 1, nuevasCapas);
-      });
-  }
-};
+  setCapas((currentLayers) => {
+    const updatedLayers = [...currentLayers];
+    const affectedRoots = new Set();
+    currentLayers.forEach((capa, index) => {
+      if (!hasLegacyNegativeMonthdayRange(capa.data?.byMonthdayStr)) return;
+      let rootIndex = index;
+      while (updatedLayers[rootIndex]?.dependienteDe !== null) {
+        rootIndex = updatedLayers[rootIndex].dependienteDe - 1;
+      }
+      affectedRoots.add(rootIndex);
+    });
+    affectedRoots.forEach((rootIndex) => actualizarCapaYDependientes(rootIndex, updatedLayers, holidays, año));
+    return updatedLayers;
+  });
+}, [capas]);
 
 const actualizarDatosCapa = (datosActualizados) => {
   setCapas((prev) => {
@@ -176,7 +164,7 @@ const actualizarDatosCapa = (datosActualizados) => {
       
 
       // Actualiza la capa actual y todos sus dependientes
-      actualizarCapaYDependientes(capaActual, nuevasCapas);
+      actualizarCapaYDependientes(capaActual, nuevasCapas, holidays, año);
 
       // Retornar la nueva copia de capas
       return nuevasCapas;
@@ -225,14 +213,15 @@ const eliminarDependencia = () => {
           capaActualObj.data.initCalendar,
           capaActualObj.data.finishCalendar,
           capaActualObj.data.byMonthday,
-          capaActualObj.data.byWeekday,
+                capaActualObj.data.byWeekday,
+                capaActualObj.data.byMonthdayStr
         );
 
         // Recalcular los días de los hijos si tiene dependientes
 
         if (capaActualObj.esPadre.length > 0) {
             capaActualObj.esPadre.forEach((idHijo) => {
-                actualizarCapaYDependientes(idHijo - 1, nuevasCapas);
+                actualizarCapaYDependientes(idHijo - 1, nuevasCapas, holidays, año);
             });
         }
 
@@ -265,7 +254,7 @@ const agregarDependencia = (dependienteDe) => {
         // Actualizar los días de todos los hijos recursivamente
         if (capaHija.esPadre.length > 0) {
             capaHija.esPadre.forEach((idHijo) => {
-                actualizarCapaYDependientes(idHijo - 1, nuevasCapas);
+                actualizarCapaYDependientes(idHijo - 1, nuevasCapas, holidays, año);
             });
         }
 

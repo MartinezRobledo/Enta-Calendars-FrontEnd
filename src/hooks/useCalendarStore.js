@@ -8,7 +8,11 @@ export const useCalendarStore = () => {
     const {
         calendars,
         status, // 'idle' | 'loading' | 'succeeded' | 'failed'
+        loadingMore,
         error,
+        loadMoreError,
+        total,
+        hasMore,
     } = useSelector( state => state.calendar );
 
     const deleteCalendar = async(id) => {
@@ -19,7 +23,11 @@ export const useCalendarStore = () => {
         //*Propiedades
         calendars,
         status, // 'idle' | 'loading' | 'succeeded' | 'failed'
+        loadingMore,
         error,
+        loadMoreError,
+        total,
+        hasMore,
 
         //*Metodos
         deleteCalendar,

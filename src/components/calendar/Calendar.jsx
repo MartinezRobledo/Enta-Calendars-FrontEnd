@@ -1,5 +1,5 @@
 import './Calendar.css';
-import { isSameDay } from 'date-fns';
+import { useMemo } from 'react';
 
 const nombresMeses = [
   "Enero", "Febrero", "Marzo", "Abril", "Mayo", "Junio",
@@ -7,6 +7,8 @@ const nombresMeses = [
 ];
 
 const nombresDias = ["Lunes", "Martes", "Miércoles", "Jueves", "Viernes", "Sábado", "Domingo"];
+const nombresDiasCortos = ["Lu", "Ma", "Mi", "Ju", "Vi", "Sá", "Do"];
+const diasVacios = [];
 
 // Devuelve el día de la semana ajustado para que 0 sea lunes
 const obtenerDiaInicio = (anio, mes) => {
@@ -17,10 +19,20 @@ const obtenerDiasDelMes = (anio, mes) => {
   return new Date(anio, mes + 1, 0).getDate(); // Último día del mes.
 };
 
-function Calendar({ anio, isDisabled, diasActivos, aditionalDaysToAdd, aditionalDaysToRemove, changeAditionalDaysToAdd, changeAditionalDaysToRemove }) {
+const claveDiaLocal = (fecha) => {
+  const date = new Date(fecha);
+  if (Number.isNaN(date.getTime())) return null;
+  return `${date.getFullYear()}-${date.getMonth()}-${date.getDate()}`;
+};
+
+function Calendar({ anio, isDisabled, diasActivos = diasVacios, aditionalDaysToAdd = diasVacios, aditionalDaysToRemove = diasVacios, changeAditionalDaysToAdd, changeAditionalDaysToRemove, onDayClick }) {
+  const diasActivosSet = useMemo(() => new Set(diasActivos.map(claveDiaLocal).filter(Boolean)), [diasActivos]);
+  const diasAgregadosSet = useMemo(() => new Set(aditionalDaysToAdd.map(claveDiaLocal).filter(Boolean)), [aditionalDaysToAdd]);
+  const diasExcluidosSet = useMemo(() => new Set(aditionalDaysToRemove.map(claveDiaLocal).filter(Boolean)), [aditionalDaysToRemove]);
 
   const manejarClickDia = (dia, boton, e) => {
     e.preventDefault(); // Prevenir el comportamiento predeterminado del clic con la rueda
+    if (onDayClick) return;
 
     if (boton === 0) {
       // Clic izquierdo
@@ -41,24 +53,19 @@ function Calendar({ anio, isDisabled, diasActivos, aditionalDaysToAdd, aditional
           <div className="mes" key={mes}>
             <div className="titulo-mes">
               <div>{mes}</div>
-              {nombresDias.map((dia) => (
-                <div className="encabezado-dia" key={dia}>
-                  {dia}
+              {nombresDias.map((dia, diaIndex) => (
+                <div className="encabezado-dia" key={dia} aria-label={dia} title={dia}>
+                  {nombresDiasCortos[diaIndex]}
                 </div>
               ))}
             </div>
             <div className="dias">
               {Array.from({ length: diasEnMes }, (_, i) => {
                 const fechaDia = new Date(anio, index, i + 1);
-                const isActive = diasActivos.some((d) =>
-                  isSameDay(d, fechaDia)
-                );
-                const isAdded = aditionalDaysToAdd.some((d) =>
-                  isSameDay(d, fechaDia)
-                );
-                const isExcluded = aditionalDaysToRemove.some((d) =>
-                  isSameDay(d, fechaDia)
-                );
+                const claveFechaDia = claveDiaLocal(fechaDia);
+                const isActive = diasActivosSet.has(claveFechaDia);
+                const isAdded = diasAgregadosSet.has(claveFechaDia);
+                const isExcluded = diasExcluidosSet.has(claveFechaDia);
 
                 return (
                   <div
@@ -68,6 +75,7 @@ function Calendar({ anio, isDisabled, diasActivos, aditionalDaysToAdd, aditional
                       ${isExcluded ? 'exclude-day' : ''}`}
                     key={fechaDia.toISOString()}
                     style={i === 0 ? { gridColumn: diaInicio } : {}}
+                    onClick={onDayClick ? (e) => { e.preventDefault(); onDayClick(fechaDia); } : undefined}
                     onMouseDown={(e) => manejarClickDia(fechaDia, e.button, e)}
                   >
                     {i + 1}

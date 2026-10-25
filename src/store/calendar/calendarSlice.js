@@ -2,9 +2,16 @@ import { createAsyncThunk, createSlice } from '@reduxjs/toolkit';
 import { calendarApi } from '../../api';
 
 // Función para convertir las fechas en formato ISO a objetos Date
-const convertDatesToObjects = (calendars) => {
+export const convertDatesToObjects = (calendars) => {
   return calendars.map(calendar => {
-    calendar.añosStore.map(año => {
+    if (!Array.isArray(calendar.añosStore)) {
+      return {
+        ...calendar,
+        fechaActualizacion: calendar.fechaActualizacion ? new Date(calendar.fechaActualizacion) : null,
+      };
+    }
+
+    calendar.añosStore.forEach(año => {
       if (año.capasStore) {
         año.capasStore.forEach(capa => {
           if (capa.dias) {
@@ -25,14 +32,25 @@ const convertDatesToObjects = (calendars) => {
   });
 };
 
-export const fetchCalendars = createAsyncThunk('calendars/fetchCalendars', async (user, { rejectWithValue }) => {
+export const CALENDARS_PAGE_SIZE = 48;
+
+export const fetchCalendars = createAsyncThunk('calendars/fetchCalendars', async ({ user, skip = 0, search = '' }, { rejectWithValue }) => {
   try {
-    const response = await calendarApi.get('/calendars/' + user);
+    const response = await calendarApi.get('/calendars/' + user, {
+      params: { skip, limit: CALENDARS_PAGE_SIZE, search },
+    });
     if (!Array.isArray(response.data.calendars)) {
       throw new Error('El formato de datos del API no es válido');
     }
-    const processedCalendars = convertDatesToObjects(response.data.calendars);
-    return processedCalendars;
+    return {
+      calendars: response.data.calendars,
+      pagination: response.data.pagination || {
+        skip,
+        limit: CALENDARS_PAGE_SIZE,
+        total: response.data.calendars.length,
+        hasMore: false,
+      },
+    };
   } catch (error) {
     console.error(error);
     return rejectWithValue(error.response?.data || 'Error desconocido');
@@ -44,25 +62,58 @@ export const calendarSlice = createSlice({
     initialState: {
     calendars: [],
     status: 'idle', // 'idle' | 'loading' | 'succeeded' | 'failed'
+    loadingMore: false,
     error: null,
+    loadMoreError: null,
+    total: 0,
+    hasMore: false,
+    currentRequestId: null,
   },
   reducers: {
     onDeleteCalendar: (state, {payload}) => {
       state.calendars = state.calendars.filter(calendar => calendar._id != payload);
+      state.total = Math.max(0, state.total - 1);
+      state.hasMore = state.calendars.length < state.total;
     },
   },
   extraReducers: (builder) => {
     builder
-      .addCase(fetchCalendars.pending, (state) => {
-        state.status = 'loading';
+      .addCase(fetchCalendars.pending, (state, action) => {
+        state.currentRequestId = action.meta.requestId;
+        state.error = null;
+        state.loadMoreError = null;
+        if (action.meta.arg.skip === 0) {
+          state.status = 'loading';
+          state.calendars = [];
+          state.total = 0;
+          state.hasMore = false;
+        } else {
+          state.loadingMore = true;
+        }
       })
       .addCase(fetchCalendars.fulfilled, (state, action) => {
+        if (state.currentRequestId !== action.meta.requestId) return;
+        const { skip, total, hasMore } = action.payload.pagination;
         state.status = 'succeeded';
-        state.calendars = action.payload;
+        state.loadingMore = false;
+        state.total = total;
+        state.hasMore = hasMore;
+        if (skip === 0) {
+          state.calendars = action.payload.calendars;
+        } else {
+          const existingIds = new Set(state.calendars.map(calendar => calendar._id));
+          state.calendars.push(...action.payload.calendars.filter(calendar => !existingIds.has(calendar._id)));
+        }
       })
       .addCase(fetchCalendars.rejected, (state, action) => {
-        state.status = 'failed';
-        state.error = action.error.message;
+        if (state.currentRequestId !== action.meta.requestId) return;
+        state.loadingMore = false;
+        if (action.meta.arg.skip === 0) {
+          state.status = 'failed';
+          state.error = typeof action.payload === 'string' ? action.payload : action.payload?.msg || action.error.message;
+        } else {
+          state.loadMoreError = typeof action.payload === 'string' ? action.payload : action.payload?.msg || action.error.message;
+        }
       });
   },
 });

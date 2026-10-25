@@ -1,5 +1,11 @@
 import { createSlice } from '@reduxjs/toolkit';
 
+const clearAuthStorage = () => {
+    const themeMode = localStorage.getItem('enta-theme-mode');
+    localStorage.clear();
+    if (themeMode) localStorage.setItem('enta-theme-mode', themeMode);
+};
+
 export const authSlice = createSlice({
     name: 'name',
     initialState: {
@@ -21,7 +27,7 @@ export const authSlice = createSlice({
         onLogout: ( state, { payload } ) => {
             state.status = 'no-authenticated';
             state.user = {};
-            localStorage.clear();
+            clearAuthStorage();
             state.errorMessage = payload;
         },
         clearErrorMessage: ( state ) => {

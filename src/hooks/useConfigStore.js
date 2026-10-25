@@ -1,9 +1,11 @@
+import { useCallback } from "react"
 import { useDispatch, useSelector } from "react-redux"
 import { 
         onChangeAñosStore,
         onChangeDiasActivos, 
         onChangeIndexAño, 
-        onChangeTitle
+        onChangeTitle,
+        onInitializeCapa,
     } from "../store/config/configSlice";
 
 export const useConfigStore = ()=> {
@@ -32,6 +34,10 @@ export const useConfigStore = ()=> {
         dispatch(onChangeAñosStore(años));
     }
 
+    const initializeConfig = useCallback((years) => {
+        dispatch(onInitializeCapa(years));
+    }, [dispatch]);
+
     return {
         //* Propiedades
         titleStore,
@@ -43,5 +49,6 @@ export const useConfigStore = ()=> {
         changeDiasActivos,
         changeIndexAño,
         changeAñosStore,
+        initializeConfig,
     }
 }

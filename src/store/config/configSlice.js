@@ -18,6 +18,8 @@ export const configSlice = createSlice({
     },
     reducers: {
         onInitializeCapa: (state, { payload }) => {
+            state.titleStore = '';
+            state.indexAñoStore = 0;
             state.añosStore = [...payload.map(año => {
                 return ({
                     año: año,

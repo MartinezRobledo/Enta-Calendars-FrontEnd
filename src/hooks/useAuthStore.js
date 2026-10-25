@@ -12,7 +12,7 @@ export const useAuthStore = () => {
             const { data } = await calendarApi.post('/auth', { name, password });
             localStorage.setItem('token', data.token);
             localStorage.setItem('token-init-date', new Date().getTime());
-            dispatch( onLogin({name: data.name, uid: data.uid, picture: data.picture}) );
+            dispatch( onLogin({name: data.name, uid: data.uid, picture: data.picture, roles: data.roles || []}) );
         } catch (error) {
             console.log(error.response?.data); // <-- Revisa el mensaje real
             dispatch( onLogout('Credenciales incorrectas'));
@@ -30,16 +30,19 @@ export const useAuthStore = () => {
             const { data } = await calendarApi.get('auth/renew');
             localStorage.setItem('token', data.token);
             localStorage.setItem('token-init-date', new Date().getTime());
-            dispatch( onLogin({name: data.name, uid: data.uid, picture: data.picture}) );
+            dispatch( onLogin({name: data.name, uid: data.uid, picture: data.picture, roles: data.roles || []}) );
         } catch (error) {
             console.error(error);
-            localStorage.clear();
             dispatch( onLogout() );
         }
     }
 
-    const startLogout = () => {
-        localStorage.clear();
+    const startLogout = async () => {
+        try {
+            await calendarApi.post('/auth/logout', {}, { timeout: 3000 });
+        } catch (error) {
+            console.error('No se pudo registrar el cierre de sesión:', error);
+        }
         dispatch( onLogout() );
     }
 

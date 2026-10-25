@@ -11,16 +11,27 @@ import Avatar from '@mui/material/Avatar';
 import Button from '@mui/material/Button';
 import Tooltip from '@mui/material/Tooltip';
 import MenuItem from '@mui/material/MenuItem';
+import ListItemIcon from '@mui/material/ListItemIcon';
+import DarkModeIcon from '@mui/icons-material/DarkMode';
+import CheckIcon from '@mui/icons-material/Check';
 import Logo from '../../assets/images/logo-enta-horizontal-blanco-h100.png'
 import { Link } from 'react-router-dom';
 import { useAuthStore } from '../../hooks';
 import { useState } from 'react';
+import { useThemeMode } from '../../theme';
 
-const pages = [{title:'Crear', path:'/crear'}, {title:'Monitor', path:'/monitor'}, {title:'Editar', path:'/editar'}];
+const pages = [{title:'Crear', path:'/crear'}, {title:'Monitor', path:'/monitor'}, {title:'Editar', path:'/editar'}, {title:'Ayuda', path:'/ayuda'}];
 const settings = ['Usuario', 'Salir'];
 
 export const Navbar = ()=> {
   const { startLogout, user } = useAuthStore();
+  const { mode, toggleMode } = useThemeMode();
+  const visiblePages = [
+    ...pages,
+    ...(user.roles?.includes('gerente') ? [{ title: 'Usuarios', path: '/usuarios' }] : []),
+    ...(user.roles?.includes('gerente') ? [{ title: 'Feriados', path: '/feriados' }] : []),
+    ...(user.roles?.some((role) => ['gerente', 'lider'].includes(role)) ? [{ title: 'Auditoría', path: '/auditoria' }] : []),
+  ];
 
   const [anchorElNav, setAnchorElNav] = useState(null);
   const [anchorElUser, setAnchorElUser] = useState(null);
@@ -83,7 +94,7 @@ export const Navbar = ()=> {
                 display: { xs: 'block', md: 'none' },
               }}
             >
-              {pages.map((page) => (
+              {visiblePages.map((page) => (
                 <MenuItem 
                   key={page.title} 
                   onClick={handleCloseNavMenu}
@@ -121,7 +132,7 @@ export const Navbar = ()=> {
           </Box>
 
           <Box sx={{ flexGrow: 1, display: { xs: 'none', md: 'flex' }, justifyContent: 'center' }}>
-            {pages.map((page) => (
+            {visiblePages.map((page) => (
               <Button
                 key={page.title}
                 onClick={handleCloseNavMenu}
@@ -169,6 +180,18 @@ export const Navbar = ()=> {
                   </Typography>
                 </MenuItem>
               ))}
+              <MenuItem
+                onClick={() => {
+                  toggleMode();
+                  handleCloseUserMenu();
+                }}
+              >
+                <ListItemIcon>
+                  <DarkModeIcon fontSize="small" />
+                </ListItemIcon>
+                <Typography sx={{ flexGrow: 1 }}>Modo oscuro</Typography>
+                {mode === 'dark' && <CheckIcon fontSize="small" />}
+              </MenuItem>
             </Menu>
           </Box>
         </Toolbar>
