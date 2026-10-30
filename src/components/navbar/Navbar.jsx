@@ -14,13 +14,13 @@ import MenuItem from '@mui/material/MenuItem';
 import ListItemIcon from '@mui/material/ListItemIcon';
 import DarkModeIcon from '@mui/icons-material/DarkMode';
 import CheckIcon from '@mui/icons-material/Check';
-import Logo from '../../assets/images/logo-enta-horizontal-blanco-h100.png'
+import Logo from '../../assets/images/enta-tools-horizontal-white.svg'
 import { Link } from 'react-router-dom';
 import { useAuthStore } from '../../hooks';
 import { useState } from 'react';
 import { useThemeMode } from '../../theme';
 
-const pages = [{title:'Crear', path:'/crear'}, {title:'Monitor', path:'/monitor'}, {title:'Editar', path:'/editar'}, {title:'Ayuda', path:'/ayuda'}];
+const pages = [{title:'Módulos', path:'/'}, {title:'Crear', path:'/crear'}, {title:'Monitor', path:'/monitor'}, {title:'Editar', path:'/editar'}, {title:'Ayuda', path:'/ayuda'}];
 const settings = ['Usuario', 'Salir'];
 
 export const Navbar = ()=> {
@@ -58,7 +58,7 @@ export const Navbar = ()=> {
           <Box component={Link} to="/" aria-label="Ir a Enta Tools" sx={{ display: { xs: 'none', md: 'flex' }, mr: 1, userSelect: 'none' }}>
             <img
               src={Logo} // URL de la imagen
-              alt="Imagen centrada"
+              alt="Enta Tools"
               style={{
                 width: '160px', // Asegura que la imagen no se desborde
                 height: 'auto', // Mantiene la proporción de la imagen
@@ -123,7 +123,7 @@ export const Navbar = ()=> {
             }}>
               <img
                 src={Logo} // URL de la imagen
-                alt="Imagen centrada"
+                alt="Enta Tools"
                 style={{
                   maxWidth: '50%', // Asegura que la imagen no se desborde
                   height: 'auto', // Mantiene la proporción de la imagen

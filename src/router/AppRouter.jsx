@@ -3,6 +3,8 @@ import { Navigate, Route, Routes } from 'react-router-dom';
 import { useAuthStore, useUiStore, useBD } from '../hooks';
 import { Alert, Box, Button, Stack } from '@mui/material';
 import { SpinModal } from '../components/spinner/spinModal';
+import UiPathLogo from '../assets/images/uipath-logo.svg';
+import AutomationAnywhereLogo from '../assets/images/Logo-Automation-Anywhere.webp';
 
 const LoginPage = lazy(() => import('../auth/pages/LoginPage').then((module) => ({ default: module.LoginPage })));
 const CrearPage = lazy(() => import('../pages/CrearPage').then((module) => ({ default: module.CrearPage })));
@@ -13,6 +15,7 @@ const AuditPage = lazy(() => import('../pages/AuditPage').then((module) => ({ de
 const HolidayAdminPage = lazy(() => import('../pages/HolidayAdminPage').then((module) => ({ default: module.HolidayAdminPage })));
 const HelpPage = lazy(() => import('../pages/HelpPage').then((module) => ({ default: module.HelpPage })));
 const ToolsHomePage = lazy(() => import('../pages/ToolsHomePage').then((module) => ({ default: module.ToolsHomePage })));
+const ControlRoomModulePage = lazy(() => import('../pages/ControlRoomModulePage').then((module) => ({ default: module.ControlRoomModulePage })));
 
 const AppInitializer = ({ onInitialized }) => {
   const {
@@ -100,8 +103,11 @@ export const AppRouter = () => {
         </>
       ) : (
         <>
+          <Route path="/auth/login" element={<Navigate to="/" replace />} />
           <Route path="/" element={<ToolsHomePage />} />
           <Route path="/herramientas" element={<ToolsHomePage />} />
+          <Route path="/uipath" element={<ControlRoomModulePage name="UiPath" color="#FA4616" logo={UiPathLogo} provider="uipath" />} />
+          <Route path="/automation-anywhere" element={<ControlRoomModulePage name="Automation Anywhere" color="#FF6A2A" logo={AutomationAnywhereLogo} provider="automation-anywhere" />} />
           <Route path="/crear" element={<CrearPage />} />
           <Route path="/monitor" element={<MonitorPage />} />
           <Route path="/editar" element={<EditarPage />} />
@@ -109,7 +115,7 @@ export const AppRouter = () => {
           <Route path="/feriados" element={user.roles?.includes('gerente') ? <HolidayAdminPage /> : <Navigate to="/monitor" replace />} />
           <Route path="/auditoria" element={user.roles?.some((role) => ['gerente', 'lider'].includes(role)) ? <AuditPage /> : <Navigate to="/monitor" replace />} />
           <Route path="/ayuda" element={<HelpPage />} />
-          <Route path="/*" element={<Navigate to="/monitor" />} />
+          <Route path="/*" element={<Navigate to="/" replace />} />
         </>
       )}
     </Routes>

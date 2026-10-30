@@ -25,7 +25,8 @@ export const useBD = () => {
     const startLoadingTemplates = useCallback(async() => {
         try {
             const { data } = await calendarApi.get('/templates');
-            dispatch( onStartLoadingTemplates( data.templates[0] ) );
+            const template = data?.templates?.[0];
+            if (template) dispatch(onStartLoadingTemplates(template));
         } catch (error) {
             console.log(error);
         }

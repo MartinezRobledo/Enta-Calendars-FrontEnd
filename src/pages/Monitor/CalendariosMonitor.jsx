@@ -31,7 +31,12 @@ const CalendariosMonitor = () => {
     const [search, setSearch] = useState(""); // Estado para el input de búsqueda
     const [selectedCalendars, setSelectedCalendars] = useState([]); // Calendarios seleccionados
     const [selectAll, setSelectAll] = useState(false);
-    const [extension, setExtension] = useState('.bprelease'); // Extensión por defecto
+    const [extension, setExtension] = useState(() => {
+        const requestedFormat = new URLSearchParams(window.location.search).get('format');
+        return CALENDAR_EXPORT_FORMATS.some(({ extension: format }) => format === requestedFormat)
+            ? requestedFormat
+            : '.bprelease';
+    });
     // const [selectedIds, setSelectedIds] = useState([])
     const navigate = useNavigate();
 

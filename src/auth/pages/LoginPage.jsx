@@ -1,6 +1,6 @@
-import { Box, Button, Input, Typography } from "@mui/material";
+import { Box, Button, Input } from "@mui/material";
 import LoginBackground from "../../assets/images/Login_BG.png";
-import EntaLogo from "../../assets/images/logo-enta-horizontal-h100.png";
+import EntaLogo from "../../assets/images/enta-tools-horizontal.svg";
 import { useAuthStore, useForm } from "../../hooks";
 import { useEffect } from "react";
 import Swal from "sweetalert2/dist/sweetalert2.js";
@@ -84,13 +84,10 @@ export const LoginPage = () => {
           <Box sx={{ width: "100%", display: "flex", justifyContent: "center" }}>
             <img
               src={EntaLogo}
-              alt="Logo Enta"
+              alt="Enta Tools"
               style={{ maxWidth: 320, width: "100%", height: "auto" }}
             />
           </Box>
-          <Typography variant="h5" fontWeight={700} color="white" sx={{ mt: -2 }}>
-            Enta Tools
-          </Typography>
           <Box
             component="form"
             onSubmit={onSubmit}
