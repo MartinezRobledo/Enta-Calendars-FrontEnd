@@ -64,10 +64,10 @@ export const ControlRoomModulePage = ({ name, color, logo, provider }) => {
       } else {
         setConnected(true);
       }
-      setForm((current) => ({ ...current, accessToken: '', apiKey: '' }));
     } catch (requestError) {
       setError(requestError.response?.data?.msg || 'No se pudo validar la conexión. Inténtalo nuevamente.');
     } finally {
+      setForm((current) => ({ ...current, accessToken: '', apiKey: '' }));
       setLoading(false);
     }
   };
