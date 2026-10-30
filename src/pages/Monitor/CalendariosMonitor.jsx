@@ -8,6 +8,7 @@ import 'sweetalert2/dist/sweetalert2.min.css';
 import { CALENDAR_EXPORT_FORMATS, createCalendarExport } from '../../components/form/functions/calendarExports';
 import { calendarApi } from '../../api';
 import { convertDatesToObjects } from '../../store/calendar/calendarSlice';
+import { ALL_CALENDAR_CLIENTS, useCalendarClient } from '../../helpers/calendarClient';
 
 const downloadBlob = (blob, filename) => {
     const link = document.createElement('a');
@@ -29,6 +30,7 @@ const CalendariosMonitor = () => {
     const { user } = useAuthStore();
     const { changeOnInitializeCapaEdit } = useConfigEditStore();
     const [search, setSearch] = useState(""); // Estado para el input de búsqueda
+    const selectedClient = useCalendarClient(user.name);
     const [selectedCalendars, setSelectedCalendars] = useState([]); // Calendarios seleccionados
     const [selectAll, setSelectAll] = useState(false);
     const [extension, setExtension] = useState(() => {
@@ -40,14 +42,14 @@ const CalendariosMonitor = () => {
     // const [selectedIds, setSelectedIds] = useState([])
     const navigate = useNavigate();
 
-    const loadCalendarDetails = async (calendarId) => {
-        const { data } = await calendarApi.get(`/calendars/${user.name}/${calendarId}`);
+    const loadCalendarDetails = async (calendarId, client = selectedClient) => {
+        const { data } = await calendarApi.get(`/calendars/${encodeURIComponent(client)}/${encodeURIComponent(calendarId)}`);
         return convertDatesToObjects([data.calendar])[0];
     };
 
     const verCalendar = async (calendar) => {
         try {
-            const fullCalendar = await loadCalendarDetails(calendar._id);
+            const fullCalendar = await loadCalendarDetails(calendar._id, calendar.cliente || selectedClient);
             changeOnInitializeCapaEdit(fullCalendar);
             navigate('/editar');
         } catch (error) {
@@ -60,14 +62,15 @@ const CalendariosMonitor = () => {
     };
 
     useEffect(() => {
+        if (!selectedClient) return undefined;
         const timeoutId = window.setTimeout(() => {
             setSelectedCalendars([]);
             setSelectAll(false);
-            getCalendars({ search: search.trim(), skip: 0 });
+            getCalendars({ client: selectedClient, search: search.trim(), skip: 0 });
         }, search ? 300 : 0);
 
         return () => window.clearTimeout(timeoutId);
-    }, [getCalendars, search]);
+    }, [getCalendars, search, selectedClient]);
 
     const handleSelectAll = (event) => {
         if (event.target.checked) {
@@ -96,8 +99,8 @@ const CalendariosMonitor = () => {
         const selected = selectedCalendars.map(calendarId => calendars.find(c => c._id === calendarId)).filter(Boolean);
         const files = (await Promise.all(selected.map(async (summary) => {
             try {
-                const calendar = await loadCalendarDetails(summary._id);
-                return { ...createCalendarExport(calendar, extension, user.name), calendarId: calendar._id };
+                const calendar = await loadCalendarDetails(summary._id, summary.cliente || selectedClient);
+                return { ...createCalendarExport(calendar, extension, calendar.cliente || user.name), calendarId: calendar._id };
             } catch (error) {
                 console.error('Error generating file for calendar', summary._id, error);
                 return null;
@@ -143,8 +146,8 @@ const CalendariosMonitor = () => {
 
     const descargarCalendar = async (calendar, ext) => {
         try {
-            const fullCalendar = await loadCalendarDetails(calendar._id);
-            const file = createCalendarExport(fullCalendar, ext, user.name);
+            const fullCalendar = await loadCalendarDetails(calendar._id, calendar.cliente || selectedClient);
+            const file = createCalendarExport(fullCalendar, ext, fullCalendar.cliente || user.name);
             await registerCalendarExport([calendar._id], ext);
             downloadBlob(file.blob, file.filename);
         } catch (error) {
@@ -208,7 +211,7 @@ const CalendariosMonitor = () => {
 
     return (
         <Grid container sx={{display:'flex', justifyContent:'center'}}>
-            <Grid item sx={{width: '100%', marginBottom:'2px' }}>
+            <Grid item sx={{ width: '100%', mb: 0.25 }}>
                 <TextField
                     label="Buscar calendario..."
                     variant="outlined"
@@ -270,6 +273,7 @@ const CalendariosMonitor = () => {
                     setSelectedIds={setSelectedCalendars}
                     selectAll={selectAll}
                     setSelectAll={(check) => setSelectAll(check)}
+                    showClient={selectedClient === ALL_CALENDAR_CLIENTS}
                 />
                 {calendars.length === 0 && status === 'succeeded' && (
                     <Grid container justifyContent="center" sx={{ py: 3 }}>
@@ -278,7 +282,7 @@ const CalendariosMonitor = () => {
                 )}
                 {hasMore && (
                     <Grid container justifyContent="center" sx={{ py: 2 }}>
-                        <Button disabled={loadingMore} onClick={() => getCalendars({ search: search.trim(), skip: calendars.length })}>
+                        <Button disabled={loadingMore} onClick={() => getCalendars({ client: selectedClient, search: search.trim(), skip: calendars.length })}>
                             {loadingMore ? <CircularProgress size={20} /> : 'Cargar más calendarios'}
                         </Button>
                     </Grid>

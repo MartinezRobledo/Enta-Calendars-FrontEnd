@@ -4,6 +4,7 @@ import { onInitializeCapa, onStartLoadingHolidays, onStartLoadingTemplates } fro
 import { calendarApi } from "../api";
 import { fetchCalendars } from "../store/calendar/calendarSlice";
 import { useAuthStore } from "./useAuthStore";
+import { getSelectedCalendarClient } from '../helpers/calendarClient';
 
 export const useBD = () => {
 
@@ -82,8 +83,8 @@ export const useBD = () => {
         }
     }, []);
 
-    const getCalendars = useCallback(async({ search = '', skip = 0 } = {}) => {
-        dispatch(fetchCalendars({ user: user.name, skip, search }));
+    const getCalendars = useCallback(async({ client = getSelectedCalendarClient() || user.name, search = '', skip = 0 } = {}) => {
+        dispatch(fetchCalendars({ client, skip, search }));
     }, [dispatch, user.name]);
 
     return {

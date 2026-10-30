@@ -11,6 +11,7 @@ export const EditarPage = () => {
     titleStore,
     añosStore,
     indexAñoStore,
+    cliente,
     changeTitle,
     changeAñosStore,
     changeIndexAño,
@@ -58,6 +59,7 @@ export const EditarPage = () => {
             accionesActivas={acciones}
             disabled={isDisabled}
             _id={_id}
+            cliente={cliente}
           />
         </Grid>
       </Grid>

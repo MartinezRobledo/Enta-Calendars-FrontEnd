@@ -34,9 +34,9 @@ export const convertDatesToObjects = (calendars) => {
 
 export const CALENDARS_PAGE_SIZE = 48;
 
-export const fetchCalendars = createAsyncThunk('calendars/fetchCalendars', async ({ user, skip = 0, search = '' }, { rejectWithValue }) => {
+export const fetchCalendars = createAsyncThunk('calendars/fetchCalendars', async ({ client, skip = 0, search = '' }, { rejectWithValue }) => {
   try {
-    const response = await calendarApi.get('/calendars/' + user, {
+    const response = await calendarApi.get('/calendars/' + encodeURIComponent(client || ''), {
       params: { skip, limit: CALENDARS_PAGE_SIZE, search },
     });
     if (!Array.isArray(response.data.calendars)) {

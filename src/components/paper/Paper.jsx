@@ -5,7 +5,7 @@ import CloseIcon from '@mui/icons-material/Close';
 import DownloadIcon from '@mui/icons-material/Download';
 import { useTheme } from '@mui/material/styles';
 
-export const SimplePaper = ({ papers = [], handleClick, handleDownload, handleDelete, selectedIds = [], setSelectedIds, setSelectAll }) => {
+export const SimplePaper = ({ papers = [], handleClick, handleDownload, handleDelete, selectedIds = [], setSelectedIds, setSelectAll, showClient = false }) => {
   const theme = useTheme();
   const selectedIdSet = new Set(selectedIds);
 
@@ -59,6 +59,15 @@ export const SimplePaper = ({ papers = [], handleClick, handleDownload, handleDe
               }}
             >
               {/* Texto con nombre del calendario */}
+              {showClient && (
+                <Typography
+                  variant="caption"
+                  sx={{ position: 'absolute', top: 8, left: 10, right: 10, color: 'text.secondary', textAlign: 'center', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}
+                  title={paper.cliente}
+                >
+                  {paper.cliente}
+                </Typography>
+              )}
               <Typography
                 variant="h6"
                 sx={{
@@ -68,7 +77,8 @@ export const SimplePaper = ({ papers = [], handleClick, handleDownload, handleDe
                   color: theme.palette.text.primary,
                   fontWeight: 'bold',
                   textAlign: 'center',
-                  height: '100%',
+                  height: showClient ? 'calc(100% - 24px)' : '100%',
+                  mt: showClient ? '20px' : 0,
                   padding: '0 10px',
                   zIndex: 1,
                   opacity: 1,

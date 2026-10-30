@@ -14,6 +14,7 @@ import { CapasForm } from './CapasForm';
 import { ActionButtons } from './components/ActionButtons';
 import { crear, guardar } from './functions/calendarsFunctions';
 import { CALENDAR_EXPORT_FORMATS, createCalendarExport } from './functions/calendarExports';
+import { useCalendarClient } from '../../helpers/calendarClient';
 
 export const CalendarForm = ({
   titleStore, 
@@ -24,7 +25,8 @@ export const CalendarForm = ({
   changeIndexAño,
   accionesActivas,
   disabled,
-  _id
+  _id,
+  cliente: clienteOriginal = '',
 }) => {
 
 const downloadCalendarFile = ({ blob, filename }) => {
@@ -38,8 +40,23 @@ const downloadCalendarFile = ({ blob, filename }) => {
   window.setTimeout(() => URL.revokeObjectURL(url), 1000);
 };
 
+const manualDayKey = (value) => {
+  const date = value instanceof Date ? value : new Date(value);
+  return Number.isNaN(date.getTime()) ? null : `${date.getMonth()}-${date.getDate()}`;
+};
+
+const manualDayInYear = (value, year) => {
+  const date = value instanceof Date ? value : new Date(value);
+  const mappedDate = new Date(year, date.getMonth(), date.getDate());
+  return mappedDate.getMonth() === date.getMonth() && mappedDate.getDate() === date.getDate()
+    ? mappedDate
+    : null;
+};
+
 const { holidays, getCalendars, saveConfig, updateConfig } = useBD();
 const { user } = useAuthStore();
+const selectedClient = useCalendarClient(user.name);
+const calendarClient = clienteOriginal || selectedClient || user.name;
 
 const currentCalendarYear = new Date().getFullYear();
 const currentYearIndex = Array.isArray(añosStore)
@@ -99,7 +116,7 @@ const actions = [
       const validado = validarFormulario();
       if(!validado) return;
 
-      const response = await crear(title, añosActivos, user.name, saveConfig);
+      const response = await crear(title, añosActivos, calendarClient, saveConfig);
       if(!response.ok) {
         Swal.fire({
           icon: 'error',
@@ -120,7 +137,7 @@ const actions = [
         buttonsStyling: true, // Permite personalizar el estilo del botón
         confirmButtonColor: '#ff8a00'
       });
-      getCalendars(user.name);   //Traigo nuevamente los datos de la base de datos. 
+      getCalendars({ client: calendarClient });
     }
   },
   {
@@ -130,7 +147,7 @@ const actions = [
       const validado = validarFormulario();
       if(!validado) return;
 
-      const response = await guardar(_id, title, añosActivos, user.name, updateConfig);
+      const response = await guardar(_id, title, añosActivos, calendarClient, updateConfig);
       if(!response.ok) {
         Swal.fire({
           icon: 'error',
@@ -151,7 +168,7 @@ const actions = [
         buttonsStyling: true, // Permite personalizar el estilo del botón
         confirmButtonColor: '#ff8a00'
       });
-      getCalendars(user.name);   //Traigo nuevamente los datos de la base de datos. 
+      getCalendars({ client: calendarClient });
     }
   },
   {
@@ -200,52 +217,44 @@ const handleBlur = () => {
 };
 
 const handleDiasAdicionales = (dia) => {
+  const key = manualDayKey(dia);
+  if (!key) return;
   setAñosActivos((prev) => {
-    let newAños = [...prev]; // Copia superficial del array
-
-    const aditionalDays = newAños[indexaño].aditionalDaysToAdd;
-    const dayExists = aditionalDays.some(existingDay => 
-      new Date(existingDay).getTime() === new Date(dia).getTime()
-    );
-
-    newAños[indexaño] = { // Crea un nuevo objeto basado en el existente
-      ...newAños[indexaño],
-      aditionalDaysToAdd: dayExists
-        ? aditionalDays.filter(existingDay => 
-            new Date(existingDay).getTime() !== new Date(dia).getTime()
-          ) // Si existe, lo elimina
-        : [...aditionalDays, dia], // Si no existe, lo agrega
-      aditionalDaysToRemove: newAños[indexaño].aditionalDaysToRemove.filter(removedDay =>
-        new Date(removedDay).getTime() !== new Date(dia).getTime()
-      ), // Siempre lo elimina
-    };
-
-    return newAños; // Retorna el nuevo array con los cambios
+    const currentYear = prev[indexaño];
+    if (!currentYear) return prev;
+    const alreadyAdded = (currentYear.aditionalDaysToAdd || []).some((date) => manualDayKey(date) === key);
+    return prev.map((yearConfig) => {
+      const year = Number(yearConfig.año);
+      if (year < currentCalendarYear - 1 || year > currentCalendarYear + 1) return yearConfig;
+      const added = (yearConfig.aditionalDaysToAdd || []).filter((date) => manualDayKey(date) !== key);
+      const removed = (yearConfig.aditionalDaysToRemove || []).filter((date) => manualDayKey(date) !== key);
+      return {
+        ...yearConfig,
+        aditionalDaysToAdd: alreadyAdded ? added : [...added, manualDayInYear(dia, year)].filter(Boolean),
+        aditionalDaysToRemove: removed,
+      };
+    });
   });
 };
 
 const handleDiasExcluidos = (dia) => {
+  const key = manualDayKey(dia);
+  if (!key) return;
   setAñosActivos((prev) => {
-    let newAños = [...prev]; // Copia superficial del array
-
-    const removalDays = newAños[indexaño].aditionalDaysToRemove;
-    const dayExists = removalDays.some(existingDay => 
-      new Date(existingDay).getTime() === new Date(dia).getTime()
-    );
-
-    newAños[indexaño] = { // Crea un nuevo objeto basado en el existente
-      ...newAños[indexaño],
-      aditionalDaysToRemove: dayExists
-        ? removalDays.filter(existingDay => 
-            new Date(existingDay).getTime() !== new Date(dia).getTime()
-          ) // Si existe, lo elimina
-        : [...removalDays, dia], // Si no existe, lo agrega
-      aditionalDaysToAdd: newAños[indexaño].aditionalDaysToAdd.filter(aditionalDay =>
-        new Date(aditionalDay).getTime() !== new Date(dia).getTime()
-      ), // Siempre lo elimina
-    };
-
-    return newAños; // Retorna el nuevo array con los cambios
+    const currentYear = prev[indexaño];
+    if (!currentYear) return prev;
+    const alreadyRemoved = (currentYear.aditionalDaysToRemove || []).some((date) => manualDayKey(date) === key);
+    return prev.map((yearConfig) => {
+      const year = Number(yearConfig.año);
+      if (year < currentCalendarYear - 1 || year > currentCalendarYear + 1) return yearConfig;
+      const removed = (yearConfig.aditionalDaysToRemove || []).filter((date) => manualDayKey(date) !== key);
+      const added = (yearConfig.aditionalDaysToAdd || []).filter((date) => manualDayKey(date) !== key);
+      return {
+        ...yearConfig,
+        aditionalDaysToRemove: alreadyRemoved ? removed : [...removed, manualDayInYear(dia, year)].filter(Boolean),
+        aditionalDaysToAdd: added,
+      };
+    });
   });
 };
 
@@ -279,7 +288,7 @@ const validarFormulario = () => {
 const exportHandler = (extension) => {
   actualizarStore();
   try {
-    const file = createCalendarExport({ titleStore: title, añosStore: añosActivos }, extension, user.name);
+    const file = createCalendarExport({ titleStore: title, añosStore: añosActivos, cliente: calendarClient }, extension, calendarClient);
     downloadCalendarFile(file);
   } catch (error) {
     Swal.fire('No se pudo exportar', error.message || 'No se generó el archivo.', 'error');

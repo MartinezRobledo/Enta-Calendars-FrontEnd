@@ -31,6 +31,7 @@ export const configEditSlice = createSlice({
             diasActivosStore: [],
         }],
         indexAñoStore: 0,
+        cliente: '',
         fechaActualizacion: null,
         _id: null
     },
@@ -40,6 +41,7 @@ export const configEditSlice = createSlice({
             state.titleStore = payload.titleStore;
             state.isDisabled = false;
             state._id = payload._id;
+            state.cliente = payload.cliente || '';
         },
         onChangeTitle: (state, { payload }) => {
             state.titleStore = payload;

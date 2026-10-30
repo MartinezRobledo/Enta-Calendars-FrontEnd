@@ -31,6 +31,7 @@ import OpenInNewRoundedIcon from '@mui/icons-material/OpenInNewRounded';
 import { createAutomationAnywhereTestScenario } from './automationAnywhereTestScenario';
 import { calendarApi } from '../api';
 import { useAuthStore } from '../hooks/useAuthStore';
+import { getSelectedCalendarClient } from '../helpers/calendarClient';
 
 const DAY_KEYS = ['MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT', 'SUN'];
 const DAY_LABELS = ['Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb', 'Dom'];
@@ -47,14 +48,14 @@ const parseDate = (value) => {
 
 const dateKey = (date) => `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
 
-const fetchAllCalendarSummaries = async (userName) => {
+const fetchAllCalendarSummaries = async (client) => {
   const pageSize = 100;
   const calendars = [];
   let skip = 0;
   let hasMore = true;
 
   while (hasMore) {
-    const { data } = await calendarApi.get(`/calendars/${encodeURIComponent(userName)}`, {
+    const { data } = await calendarApi.get(`/calendars/${encodeURIComponent(client)}`, {
       params: { skip, limit: pageSize },
     });
     if (!Array.isArray(data.calendars)) throw new Error('La respuesta no contiene una lista de calendarios.');
@@ -480,6 +481,7 @@ export const AutomationAnywhereWeekPage = ({ snapshot, fixedScheduleIds, onFixed
   const calendarRef = useRef(null);
   const hourGridStartRef = useRef(null);
   const { user } = useAuthStore();
+  const calendarClient = getSelectedCalendarClient() || user.name;
   const currentSnapshot = testSnapshot || snapshot;
   const isTestScenario = Boolean(currentSnapshot.isTestScenario);
   const effectiveFixedScheduleIds = currentSnapshot.isTestScenario ? testFixedScheduleIds : fixedScheduleIds;
@@ -501,7 +503,7 @@ export const AutomationAnywhereWeekPage = ({ snapshot, fixedScheduleIds, onFixed
 
     let cancelled = false;
     setCalendarLoading(true);
-    fetchAllCalendarSummaries(user.name)
+    fetchAllCalendarSummaries(calendarClient)
       .then((calendars) => {
         if (!cancelled) {
           setStoredCalendars(calendars);
@@ -517,7 +519,7 @@ export const AutomationAnywhereWeekPage = ({ snapshot, fixedScheduleIds, onFixed
       });
 
     return () => { cancelled = true; };
-  }, [newScheduleOpen, user.name]);
+  }, [newScheduleOpen, user.name, calendarClient]);
 
   const durations = useMemo(() => getDurationBySchedule(activities), [activities]);
   const scheduleResources = useMemo(() => new Map(schedules.map((schedule) => [schedule.id, getResourceIds(schedule, activities, devices)])), [schedules, activities, devices]);
@@ -647,7 +649,8 @@ export const AutomationAnywhereWeekPage = ({ snapshot, fixedScheduleIds, onFixed
 
     setCalendarLoading(true);
     try {
-      const { data } = await calendarApi.get(`/calendars/${encodeURIComponent(user.name)}/${encodeURIComponent(calendarId)}`);
+      const client = storedCalendars.find((calendar) => calendar._id === calendarId)?.cliente || calendarClient;
+      const { data } = await calendarApi.get(`/calendars/${encodeURIComponent(client)}/${encodeURIComponent(calendarId)}`);
       const selectedCalendar = data.calendar;
       const yearConfig = selectedCalendar?.añosStore?.find((year) => Number(year.año) === days[0].getFullYear());
       if (!yearConfig) {
@@ -672,7 +675,7 @@ export const AutomationAnywhereWeekPage = ({ snapshot, fixedScheduleIds, onFixed
     setCalendarLoading(true);
     setCalendarError('');
     try {
-      const calendars = await fetchAllCalendarSummaries(user.name);
+      const calendars = await fetchAllCalendarSummaries(calendarClient);
       setStoredCalendars(calendars);
     } catch (error) {
       setCalendarError(error.response?.data?.msg || 'No se pudo actualizar la lista de calendarios de Enta Calendars.');

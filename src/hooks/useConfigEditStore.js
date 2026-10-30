@@ -16,6 +16,7 @@ export const useConfigEditStore = ()=> {
         titleStore,
         añosStore,
         indexAñoStore,
+        cliente,
         _id,
         isDisabled,
     } = useSelector( state => state.configEdit ); // Accede a configSlice de edicion
@@ -49,6 +50,7 @@ export const useConfigEditStore = ()=> {
         titleStore,
         añosStore,
         indexAñoStore,
+        cliente,
         _id,
         isDisabled,
 

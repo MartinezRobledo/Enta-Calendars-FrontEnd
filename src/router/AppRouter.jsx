@@ -5,6 +5,7 @@ import { Alert, Box, Button, Stack } from '@mui/material';
 import { SpinModal } from '../components/spinner/spinModal';
 import UiPathLogo from '../assets/images/uipath-logo.svg';
 import AutomationAnywhereLogo from '../assets/images/Logo-Automation-Anywhere.webp';
+import { ALL_CALENDAR_CLIENTS, getSelectedCalendarClient } from '../helpers/calendarClient';
 
 const LoginPage = lazy(() => import('../auth/pages/LoginPage').then((module) => ({ default: module.LoginPage })));
 const CrearPage = lazy(() => import('../pages/CrearPage').then((module) => ({ default: module.CrearPage })));
@@ -16,6 +17,15 @@ const HolidayAdminPage = lazy(() => import('../pages/HolidayAdminPage').then((mo
 const HelpPage = lazy(() => import('../pages/HelpPage').then((module) => ({ default: module.HelpPage })));
 const ToolsHomePage = lazy(() => import('../pages/ToolsHomePage').then((module) => ({ default: module.ToolsHomePage })));
 const ControlRoomModulePage = lazy(() => import('../pages/ControlRoomModulePage').then((module) => ({ default: module.ControlRoomModulePage })));
+const CalendarClientSelectionPage = lazy(() => import('../pages/CalendarClientSelectionPage').then((module) => ({ default: module.CalendarClientSelectionPage })));
+
+const CalendarWorkspaceRoute = ({ children, needsSpecificClient = false }) => {
+  const client = getSelectedCalendarClient();
+  if (!client || (needsSpecificClient && client === ALL_CALENDAR_CLIENTS)) {
+    return <Navigate to="/calendars" replace />;
+  }
+  return children;
+};
 
 const AppInitializer = ({ onInitialized }) => {
   const {
@@ -108,9 +118,10 @@ export const AppRouter = () => {
           <Route path="/herramientas" element={<ToolsHomePage />} />
           <Route path="/uipath" element={<ControlRoomModulePage name="UiPath" color="#FA4616" logo={UiPathLogo} provider="uipath" />} />
           <Route path="/automation-anywhere" element={<ControlRoomModulePage name="Automation Anywhere" color="#FF6A2A" logo={AutomationAnywhereLogo} provider="automation-anywhere" />} />
-          <Route path="/crear" element={<CrearPage />} />
-          <Route path="/monitor" element={<MonitorPage />} />
-          <Route path="/editar" element={<EditarPage />} />
+          <Route path="/calendars" element={<CalendarClientSelectionPage />} />
+          <Route path="/crear" element={<CalendarWorkspaceRoute needsSpecificClient><CrearPage /></CalendarWorkspaceRoute>} />
+          <Route path="/monitor" element={<CalendarWorkspaceRoute><MonitorPage /></CalendarWorkspaceRoute>} />
+          <Route path="/editar" element={<CalendarWorkspaceRoute><EditarPage /></CalendarWorkspaceRoute>} />
           <Route path="/usuarios" element={user.roles?.includes('gerente') ? <UserAdminPage /> : <Navigate to="/monitor" replace />} />
           <Route path="/feriados" element={user.roles?.includes('gerente') ? <HolidayAdminPage /> : <Navigate to="/monitor" replace />} />
           <Route path="/auditoria" element={user.roles?.some((role) => ['gerente', 'lider'].includes(role)) ? <AuditPage /> : <Navigate to="/monitor" replace />} />

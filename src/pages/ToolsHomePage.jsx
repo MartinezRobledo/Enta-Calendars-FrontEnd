@@ -33,7 +33,7 @@ const modules = [
     name: 'Calendars',
     eyebrow: 'MULTIPLATAFORMA',
     description: 'Crea, configura y administra calendarios laborales para todas tus tecnologías.',
-    path: '/monitor',
+    path: '/calendars',
     color: '#168dff',
     logo: EntaCalendarsLogo,
     logoBackground: '#fff',

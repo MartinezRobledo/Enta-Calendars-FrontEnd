@@ -12,13 +12,19 @@ import Button from '@mui/material/Button';
 import Tooltip from '@mui/material/Tooltip';
 import MenuItem from '@mui/material/MenuItem';
 import ListItemIcon from '@mui/material/ListItemIcon';
+import FormControl from '@mui/material/FormControl';
+import InputLabel from '@mui/material/InputLabel';
+import Select from '@mui/material/Select';
 import DarkModeIcon from '@mui/icons-material/DarkMode';
 import CheckIcon from '@mui/icons-material/Check';
 import Logo from '../../assets/images/enta-tools-horizontal-white.svg'
 import { Link } from 'react-router-dom';
 import { useAuthStore } from '../../hooks';
 import { useState } from 'react';
+import { useEffect } from 'react';
 import { useThemeMode } from '../../theme';
+import { calendarApi } from '../../api';
+import { ALL_CALENDAR_CLIENTS, getSelectedCalendarClient, setSelectedCalendarClient, useCalendarClient } from '../../helpers/calendarClient';
 
 const pages = [{title:'Módulos', path:'/'}, {title:'Crear', path:'/crear'}, {title:'Monitor', path:'/monitor'}, {title:'Editar', path:'/editar'}, {title:'Ayuda', path:'/ayuda'}];
 const settings = ['Usuario', 'Salir'];
@@ -26,6 +32,8 @@ const settings = ['Usuario', 'Salir'];
 export const Navbar = ()=> {
   const { startLogout, user } = useAuthStore();
   const { mode, toggleMode } = useThemeMode();
+  const selectedClient = useCalendarClient(user.name);
+  const [clients, setClients] = useState([]);
   const visiblePages = [
     ...pages,
     ...(user.roles?.includes('gerente') ? [{ title: 'Usuarios', path: '/usuarios' }] : []),
@@ -35,6 +43,39 @@ export const Navbar = ()=> {
 
   const [anchorElNav, setAnchorElNav] = useState(null);
   const [anchorElUser, setAnchorElUser] = useState(null);
+
+  useEffect(() => {
+    let cancelled = false;
+    calendarApi.get('/calendars/clients')
+      .then(({ data }) => {
+        if (cancelled) return;
+        const availableClients = Array.isArray(data.clients) ? data.clients : [];
+        setClients(availableClients);
+        const storedClient = getSelectedCalendarClient();
+        if (storedClient && (storedClient === ALL_CALENDAR_CLIENTS || availableClients.includes(storedClient))) return;
+        if (availableClients[0]) setSelectedCalendarClient(availableClients[0]);
+      })
+      .catch((error) => console.error('No se pudieron cargar los clientes:', error));
+    return () => { cancelled = true; };
+  }, []);
+
+  const renderClientSelector = (id) => (
+    <FormControl fullWidth size="small" variant="outlined">
+      <InputLabel id={`${id}-label`}>Cliente</InputLabel>
+      <Select
+        labelId={`${id}-label`}
+        id={id}
+        value={selectedClient}
+        label="Cliente"
+        onChange={(event) => setSelectedCalendarClient(event.target.value)}
+        disabled={!clients.length}
+        sx={{ color: 'white', '.MuiOutlinedInput-notchedOutline': { borderColor: 'rgba(255,255,255,.4)' }, '&:hover .MuiOutlinedInput-notchedOutline': { borderColor: 'white' }, '.MuiSvgIcon-root': { color: 'white' } }}
+      >
+        {clients.map((client) => <MenuItem key={client} value={client}>{client}</MenuItem>)}
+        <MenuItem value={ALL_CALENDAR_CLIENTS}>Todos los clientes</MenuItem>
+      </Select>
+    </FormControl>
+  );
 
   const handleOpenNavMenu = (event) => {
     setAnchorElNav(event.currentTarget);
@@ -64,6 +105,10 @@ export const Navbar = ()=> {
                 height: 'auto', // Mantiene la proporción de la imagen
               }} // Ajusta la imagen para que se adapte a la caja
             />
+          </Box>
+
+          <Box sx={{ display: { xs: 'none', md: 'flex' }, flex: '0 1 300px', minWidth: 170, mx: 2 }}>
+            {renderClientSelector('calendar-client-desktop')}
           </Box>
 
           <Box sx={{ flexGrow: 1, display: { xs: 'flex', md: 'none' } }}>
@@ -109,6 +154,7 @@ export const Navbar = ()=> {
                   </Typography>
                 </MenuItem>
               ))}
+              <Box sx={{ px: 2, py: 1.5, minWidth: 230 }}>{renderClientSelector('calendar-client-mobile')}</Box>
             </Menu>
           </Box>
 
