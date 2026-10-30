@@ -10,12 +10,12 @@ import { createAutomationAnywhereTestScenario } from './automationAnywhereTestSc
 
 const initialConnections = {
   uipath: {
-    organization: 'pecomenergia',
-    tenant: 'DefaultTenant',
+    organization: '',
+    tenant: '',
     accessToken: '',
   },
   'automation-anywhere': {
-    controlRoomUrl: 'https://naturgy-prod.my.automationanywhere.digital',
+    controlRoomUrl: '',
     username: '',
     apiKey: '',
   },
@@ -24,7 +24,7 @@ const initialConnections = {
 const connectionDetails = {
   uipath: {
     endpoint: '/integrations/uipath/connect',
-    description: 'Configura el acceso a UiPath Orchestrator con el token y la organización de tu cliente Pecom.',
+    description: 'Configura el acceso a UiPath Orchestrator con los datos de tu organización.',
   },
   'automation-anywhere': {
     endpoint: '/integrations/automation-anywhere/overview',
